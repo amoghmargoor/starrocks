@@ -38,6 +38,7 @@ import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.starrocks.common.Config;
 import com.starrocks.common.util.NetUtils;
+import com.starrocks.http.WebUtils;
 import com.starrocks.ha.FrontendNodeType;
 import com.starrocks.http.ActionController;
 import com.starrocks.http.BaseRequest;
@@ -267,11 +268,10 @@ public class MetaService {
                 imageFormatVersion = ImageFormatVersion.valueOf(formatStr);
             }
 
-            String protocol = Config.enable_https ? "https" : "http";
-            String url = protocol + "://" + NetUtils.getHostPortInAccessibleFormat(machine, Integer.parseInt(portStr)) + 
-                    "/image?version=" + versionStr
-                    + "&subdir=" + subDirStr
-                    + "&image_format_version=" + imageFormatVersion;
+            String url = WebUtils.buildEndpoint(machine, Integer.parseInt(portStr), "/image",
+                    "version=" + versionStr,
+                    "subdir=" + subDirStr,
+                    "image_format_version=" + imageFormatVersion);
             String filename = Storage.IMAGE + "." + versionStr;
 
             String realDir = MetaHelper.getImageFileDir(subDirStr, imageFormatVersion);

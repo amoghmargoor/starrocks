@@ -36,7 +36,9 @@ package com.starrocks.http;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
+import com.starrocks.common.Config;
 import com.starrocks.common.path.PathTrie;
+import com.starrocks.common.util.NetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
@@ -214,5 +216,94 @@ public class WebUtils {
             queryMap.put(key, value);
         }
         return queryMap;
+    }
+
+    /**
+     * Builds a complete HTTP/HTTPS endpoint URL for a given IP address.
+     * Automatically selects the appropriate protocol and port based on configuration.
+     * 
+     * @param ip The IP address or hostname
+     * @param path The API path (e.g., "/api/bootstrap")
+     * @param queryParams Optional query parameters to append
+     * @return Complete endpoint URL
+     */
+    public static String buildEndpoint(String ip, String path, String... queryParams) {
+        return buildEndpoint(ip, getPort(), path, queryParams);
+    }
+    
+    /**
+     * Builds a complete HTTP/HTTPS endpoint URL for a given IP address and port.
+     * Automatically selects the appropriate protocol based on configuration.
+     * 
+     * @param ip The IP address or hostname
+     * @param port The port number to use
+     * @param path The API path (e.g., "/api/bootstrap")
+     * @param queryParams Optional query parameters to append
+     * @return Complete endpoint URL
+     */
+    public static String buildEndpoint(String ip, int port, String path, String... queryParams) {
+        String protocol = getProtocol();
+        String accessibleHostPort = NetUtils.getHostPortInAccessibleFormat(ip, port);
+        
+        StringBuilder url = new StringBuilder();
+        url.append(protocol).append("://").append(accessibleHostPort).append(path);
+        
+        if (queryParams != null && queryParams.length > 0) {
+            url.append("?").append(String.join("&", queryParams));
+        }
+        
+        return url.toString();
+    }
+    
+    /**
+     * Builds a complete endpoint URL with custom protocol, IP, port, and path.
+     * 
+     * @param protocol The protocol to use (e.g., "http", "https")
+     * @param ip The IP address or hostname
+     * @param port The port number to use
+     * @param path The API path (e.g., "/api/bootstrap")
+     * @param queryParams Optional query parameters to append
+     * @return Complete endpoint URL
+     */
+    public static String buildEndpoint(String protocol, String ip, int port, String path, String... queryParams) {
+        String accessibleHostPort = NetUtils.getHostPortInAccessibleFormat(ip, port);
+        
+        StringBuilder url = new StringBuilder();
+        url.append(protocol).append("://").append(accessibleHostPort).append(path);
+        
+        if (queryParams != null && queryParams.length > 0) {
+            url.append("?").append(String.join("&", queryParams));
+        }
+        
+        return url.toString();
+    }
+    
+    /**
+     * Gets the appropriate protocol and port for the current configuration.
+     * 
+     * @return Pair containing protocol (http/https) and port number
+     */
+    public static com.starrocks.common.Pair<String, Integer> getProtocolAndPort() {
+        String protocol = Config.enable_https ? "https" : "http";
+        int port = Config.enable_https ? Config.https_port : Config.http_port;
+        return new com.starrocks.common.Pair<>(protocol, port);
+    }
+    
+    /**
+     * Gets the appropriate port for the current configuration.
+     * 
+     * @return Port number (HTTP or HTTPS based on configuration)
+     */
+    public static int getPort() {
+        return Config.enable_https ? Config.https_port : Config.http_port;
+    }
+    
+    /**
+     * Gets the protocol for the current configuration.
+     * 
+     * @return Protocol string ("http" or "https")
+     */
+    public static String getProtocol() {
+        return Config.enable_https ? "https" : "http";
     }
 }

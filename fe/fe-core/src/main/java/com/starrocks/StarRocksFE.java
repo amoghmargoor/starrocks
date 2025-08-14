@@ -43,6 +43,7 @@ import com.starrocks.common.ThreadPoolManager;
 import com.starrocks.common.Version;
 import com.starrocks.common.util.NetUtils;
 import com.starrocks.common.util.Util;
+import com.starrocks.http.WebUtils;
 import com.starrocks.failpoint.FailPoint;
 import com.starrocks.ha.FrontendNodeType;
 import com.starrocks.ha.StateChangeExecutor;
@@ -313,13 +314,9 @@ public class StarRocksFE {
     }
 
     private static boolean isNewLeaderReady(String leaderHost) {
-        String protocol = Config.enable_https ? "https" : "http";
-        int port = Config.enable_https ? Config.https_port : Config.http_port;
-        String accessibleHostPort = NetUtils.getHostPortInAccessibleFormat(leaderHost, port);
-        String url = protocol + "://" + accessibleHostPort
-                + "/api/bootstrap"
-                + "?cluster_id=" + GlobalStateMgr.getCurrentState().getNodeMgr().getClusterId()
-                + "&token=" +  GlobalStateMgr.getCurrentState().getNodeMgr().getToken();
+        String url = WebUtils.buildEndpoint(leaderHost, "/api/bootstrap",
+                "cluster_id=" + GlobalStateMgr.getCurrentState().getNodeMgr().getClusterId(),
+                "token=" + GlobalStateMgr.getCurrentState().getNodeMgr().getToken());
         try {
             String resultStr = Util.getResultForUrl(url, null,
                     Config.heartbeat_timeout_second * 1000,
